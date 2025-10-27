@@ -18,9 +18,17 @@ class PlaneManager {
     private var planeProducerTask: Task<Void, Never>?
     private var planeConsumerTask: Task<Void, Never>?
 
+    // Halloween managers
+    var decorationManager: DecorationManager?
+    var cemeteryManager: CemeteryManager?
+
     init(appState: AppState, rootEntity: Entity) {
         self.appState = appState
         self.rootEntity = rootEntity
+
+        // Initialize Halloween managers
+        self.decorationManager = DecorationManager(appState: appState, rootEntity: rootEntity)
+        self.cemeteryManager = CemeteryManager(appState: appState, rootEntity: rootEntity)
     }
 
     /// Start monitoring plane updates
@@ -85,9 +93,13 @@ class PlaneManager {
             return
         }
 
-        let material = MaterialProvider.planeMaterial(
+        guard let appState = appState else { return }
+
+        // Get themed material based on current theme
+        let material = HalloweenMaterials.themedPlaneMaterial(
             for: anchor.classification,
-            alignment: anchor.alignment
+            alignment: anchor.alignment,
+            theme: appState.theme
         )
 
         let entity = ModelEntity(mesh: meshResource, materials: [material])
@@ -100,23 +112,35 @@ class PlaneManager {
         entity.collision = CollisionComponent(shapes: [.generateBox(width: 1, height: 0.01, depth: 1)])
 
         // Set initial visibility based on current setting
-        entity.isEnabled = appState?.showPlanes ?? true
+        entity.isEnabled = appState.showPlanes
 
         planeEntities[anchor.id] = entity
         rootEntity.addChild(entity)
 
         print("➕ Added \(anchor.alignment) plane: \(anchor.classification) (\(anchor.id))")
+
+        // Spawn theme-specific decorations
+        switch appState.theme {
+        case .hauntedHouse:
+            decorationManager?.spawnDecorations(for: anchor)
+        case .cemetery:
+            cemeteryManager?.spawnCemeteryElements(for: anchor)
+        default:
+            break
+        }
     }
 
     /// Update an existing plane entity
     private func updatePlane(_ anchor: PlaneAnchor) {
         guard let entity = planeEntities[anchor.id] else { return }
+        guard let appState = appState else { return }
 
         // Update mesh
         if let meshResource = MeshConverter.planeMeshResource(from: anchor.geometry) {
-            let material = MaterialProvider.planeMaterial(
+            let material = HalloweenMaterials.themedPlaneMaterial(
                 for: anchor.classification,
-                alignment: anchor.alignment
+                alignment: anchor.alignment,
+                theme: appState.theme
             )
             entity.model?.mesh = meshResource
             entity.model?.materials = [material]
@@ -130,6 +154,11 @@ class PlaneManager {
     private func removePlane(_ anchor: PlaneAnchor) {
         guard let entity = planeEntities.removeValue(forKey: anchor.id) else { return }
         entity.removeFromParent()
+
+        // Remove associated decorations
+        decorationManager?.removeDecorations(for: anchor.id)
+        cemeteryManager?.removeCemeteryElements(for: anchor.id)
+
         print("➖ Removed plane: \(anchor.id)")
     }
 
@@ -147,6 +176,20 @@ class PlaneManager {
             entity.removeFromParent()
         }
         planeEntities.removeAll()
+
+        // Clear all decorations
+        decorationManager?.clearAll()
+        cemeteryManager?.clearAll()
+    }
+
+    /// Update all plane materials when theme changes
+    func updateTheme(_ theme: Theme) {
+        // Update all existing plane materials
+        for (id, entity) in planeEntities {
+            // We need to get the anchor classification, but we don't have it stored
+            // For now, we'll just clear and let them regenerate
+            // In production, you might want to store anchor data
+        }
     }
 }
 

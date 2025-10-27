@@ -98,10 +98,11 @@ class MeshManager {
             return
         }
 
-        // Use default classification since API changed in visionOS 2
-        let material = MaterialProvider.meshMaterial(
+        // Use themed material based on current theme and style
+        let material = HalloweenMaterials.themedMeshMaterial(
             for: .none,
-            style: appState.meshStyle
+            style: appState.meshStyle,
+            theme: appState.theme
         )
 
         let entity = ModelEntity(mesh: meshResource, materials: [material])
@@ -128,10 +129,11 @@ class MeshManager {
 
         // Update mesh
         if let meshResource = MeshConverter.meshResource(from: anchor.geometry) {
-            // Use default classification since API changed in visionOS 2
-            let material = MaterialProvider.meshMaterial(
+            // Use themed material based on current theme and style
+            let material = HalloweenMaterials.themedMeshMaterial(
                 for: .none,
-                style: appState.meshStyle
+                style: appState.meshStyle,
+                theme: appState.theme
             )
             entity.model?.mesh = meshResource
             entity.model?.materials = [material]
@@ -165,17 +167,31 @@ class MeshManager {
     /// Update mesh visualization style
     @MainActor
     func updateStyle(_ style: MeshStyle) {
+        guard let appState = appState else { return }
+
         for (_, entity) in meshEntities {
-            // Get the classification from the anchor
-            // Since we don't have direct access to anchor here, use a default material
-            let material: any RealityKit.Material = switch style {
-            case .wireframe:
-                MaterialProvider.wireframeMaterial()
-            case .solid:
-                MaterialProvider.solidMeshMaterial()
-            case .transparent:
-                MaterialProvider.transparentMeshMaterial()
-            }
+            // Use themed material
+            let material = HalloweenMaterials.themedMeshMaterial(
+                for: .none,
+                style: style,
+                theme: appState.theme
+            )
+
+            entity.model?.materials = [material]
+        }
+    }
+
+    /// Update all mesh materials when theme changes
+    @MainActor
+    func updateTheme(_ theme: Theme) {
+        guard let appState = appState else { return }
+
+        for (_, entity) in meshEntities {
+            let material = HalloweenMaterials.themedMeshMaterial(
+                for: .none,
+                style: appState.meshStyle,
+                theme: theme
+            )
 
             entity.model?.materials = [material]
         }

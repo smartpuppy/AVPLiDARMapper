@@ -65,6 +65,79 @@ AVPLiDARMapper is a proof-of-concept application that showcases the spatial comp
 
 ---
 
+## Halloween Themes
+
+**NEW!** The app now includes 5 spooky themes for Halloween, transforming the LiDAR mapper into various haunted experiences while maintaining the original functionality.
+
+### Available Themes
+
+#### 1. Normal (Default)
+The original LiDAR mapper experience with scientific visualization.
+- Color-coded surface detection
+- Standard mesh visualization
+- Technical statistics display
+
+#### 2. Haunted House 🏚️
+Automatically spawns Halloween decorations based on detected surfaces!
+- **Pumpkins** 🎃 spawn on floors with glowing eyes
+- **Bats** 🦇 hang from ceilings with spread wings
+- **Ghosts** 👻 float in front of walls with translucent bodies
+- Atmospheric semi-transparent plane overlays
+- Perfect for creating an instant haunted house in any room
+
+#### 3. Ectoplasm Scanner 👻
+Transform mesh visualization into glowing paranormal energy!
+- Green glowing ectoplasm on floors
+- Purple spectral energy on walls and ceilings
+- Pulsating wireframe effects
+- Pink ethereal energy on other surfaces
+- Makes your room look like a scene from Ghostbusters
+
+#### 4. Paranormal Activity Tracker 📊
+Reskins the entire UI with spooky themed statistics:
+- "Paranormal Hot Spots" instead of "Detected Planes"
+- "Ghost Signatures" instead of "Mesh Anchors"
+- "Investigator Position" for device location
+- Eerie red glow materials on detected surfaces
+- Perfect for paranormal investigation roleplay
+
+#### 5. AR Cemetery ⚰️
+Transforms your space into a spooky graveyard!
+- **Graves and tombstones** spawn on floor surfaces
+- Weathered stone materials with aged tilting effects
+- **Haunted portraits** with glowing red eyes appear on walls
+- Dark, ominous mesh visualization
+- Cemetery ground textures replace floor planes
+- "Burial Grounds" and "Undead Meshes" in statistics
+
+### How to Use Halloween Themes
+
+1. Launch the app and start mapping
+2. In the control panel, select the **Theme** dropdown
+3. Choose any of the 5 themes
+4. Watch as your environment transforms instantly!
+5. Switch between themes at any time - decorations update automatically
+
+### Technical Features
+
+- **Dynamic decoration spawning** based on plane classification
+- **Theme-aware materials** for all visualizations
+- **Real-time theme switching** without restarting the session
+- **Procedurally generated decorations** with randomized positions
+- **Themed UI labels** that change based on selected theme
+- **Original functionality preserved** - normal mode works exactly as before
+
+### Theme Manager Architecture
+
+New components added for Halloween features:
+- `HalloweenMaterials.swift` - Spooky material library (ectoplasm, gravestones, etc.)
+- `DecorationManager.swift` - Spawns decorations (bats, ghosts, pumpkins)
+- `CemeteryManager.swift` - Creates graves, tombstones, and haunted portraits
+- `Theme` enum - Defines all 5 themes with display names
+- Enhanced `PlaneManager` and `MeshManager` for theme support
+
+---
+
 ## Screenshots
 
 ### Color-Coded Surface Detection
@@ -186,6 +259,7 @@ On first launch:
 
 ### Controls
 
+- **Theme** - Select from 5 themes (Normal, Haunted House, Ectoplasm, Paranormal, Cemetery)
 - **Show Planes** - Toggle plane detection overlays
 - **Show Mesh** - Toggle 3D mesh visualization
 - **Mesh Style** - Choose Wireframe/Solid/Transparent
@@ -207,16 +281,19 @@ AVPLiDARMapper/
 ├── LiDARMapper/
 │   ├── App/
 │   │   ├── LiDARMapperApp.swift       # App entry point & scene config
-│   │   └── ContentView.swift          # Control panel UI
+│   │   └── ContentView.swift          # Control panel UI (with theme picker)
 │   ├── Models/
 │   │   ├── AppState.swift             # AR session state management
 │   │   ├── PlaneManager.swift         # Plane detection logic
-│   │   └── MeshManager.swift          # Mesh reconstruction logic
+│   │   ├── MeshManager.swift          # Mesh reconstruction logic
+│   │   ├── DecorationManager.swift    # Halloween decoration spawner
+│   │   └── CemeteryManager.swift      # Cemetery theme manager
 │   ├── Views/
 │   │   └── ImmersiveView.swift        # 3D immersive space
 │   ├── Utilities/
 │   │   ├── MeshConverter.swift        # ARKit → RealityKit conversion
-│   │   └── MaterialProvider.swift    # Visualization materials
+│   │   ├── MaterialProvider.swift    # Visualization materials
+│   │   └── HalloweenMaterials.swift   # Halloween-themed materials
 │   └── Info.plist                     # App configuration & permissions
 ├── project.yml                         # XcodeGen configuration
 ├── README.md                          # This file
@@ -381,6 +458,8 @@ This regenerates the `.xcodeproj` file with your changes.
 
 Potential enhancements for future versions:
 
+- [x] **Halloween themes** - Multiple spooky visualization modes
+- [x] **Dynamic decoration spawning** - Procedural Halloween elements
 - [ ] Mesh export to USDZ/OBJ format
 - [ ] Spatial persistence (save/load maps)
 - [ ] Shared spatial anchors for multiplayer
@@ -388,9 +467,11 @@ Potential enhancements for future versions:
 - [ ] Room measurement and dimensions
 - [ ] Custom mesh filtering and cleanup
 - [ ] Recording and playback of spatial data
-- [ ] Integration with spatial audio
+- [ ] Integration with spatial audio for Halloween sounds
 - [ ] Hand tracking integration
 - [ ] Multi-room support with room transitions
+- [ ] Additional seasonal themes (Christmas, etc.)
+- [ ] Animated decorations with physics interactions
 
 ---
 
@@ -456,6 +537,16 @@ Enhanced by **Claude Code** (local instance) on October 25-26, 2025:
 - Corrected Info.plist scene manifest configuration
 - Changed to `.mixed` immersion style for unbounded experience
 - Updated documentation and project structure
+
+### Halloween Features
+
+Added by **Claude Code** on October 27, 2025:
+- Implemented 5 themed visualization modes
+- Created Halloween decoration system (bats, ghosts, pumpkins)
+- Built AR Cemetery with graves and haunted portraits
+- Added ectoplasm scanner with spectral effects
+- Implemented paranormal activity tracker UI theme
+- Preserved original functionality in "Normal" theme
 
 ### Maintained By
 

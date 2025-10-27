@@ -18,11 +18,11 @@ struct ContentView: View {
         VStack(spacing: 30) {
             // Header
             VStack(spacing: 10) {
-                Text("LiDAR Mapper")
+                Text(headerTitle(for: appState.theme))
                     .font(.extraLargeTitle)
                     .fontWeight(.bold)
 
-                Text("Real-time 3D Spatial Mapping")
+                Text(headerSubtitle(for: appState.theme))
                     .font(.title2)
                     .foregroundStyle(.secondary)
             }
@@ -41,9 +41,9 @@ struct ContentView: View {
 
                 if appState.isSessionRunning {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Detected Planes: \(appState.detectedPlaneCount)")
-                        Text("Mesh Anchors: \(appState.meshAnchorCount)")
-                        Text("Device Position: \(formatPosition(appState.devicePosition))")
+                        Text("\(planeLabel(for: appState.theme)): \(appState.detectedPlaneCount)")
+                        Text("\(meshLabel(for: appState.theme)): \(appState.meshAnchorCount)")
+                        Text("\(positionLabel(for: appState.theme)): \(formatPosition(appState.devicePosition))")
                     }
                     .font(.body)
                     .foregroundStyle(.secondary)
@@ -55,6 +55,26 @@ struct ContentView: View {
             .cornerRadius(12)
 
             Divider()
+
+            // Theme Selector
+            VStack(spacing: 15) {
+                Text("Theme")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Picker("Theme", selection: $appState.theme) {
+                    ForEach(Theme.allCases, id: \.self) { theme in
+                        Text(theme.displayName).tag(theme)
+                    }
+                }
+                .pickerStyle(.menu)
+                .onChange(of: appState.theme) { _, newTheme in
+                    handleThemeChange(newTheme)
+                }
+            }
+            .padding()
+            .background(themeBackground(for: appState.theme))
+            .cornerRadius(12)
 
             // Controls
             VStack(spacing: 20) {
@@ -111,12 +131,130 @@ struct ContentView: View {
         guard let pos = position else { return "Unknown" }
         return String(format: "X: %.2f, Y: %.2f, Z: %.2f", pos.x, pos.y, pos.z)
     }
+
+    // MARK: - Theme UI Helpers
+
+    private func headerTitle(for theme: Theme) -> String {
+        switch theme {
+        case .normal:
+            return "LiDAR Mapper"
+        case .hauntedHouse:
+            return "Haunted House"
+        case .ectoplasm:
+            return "Ectoplasm Scanner"
+        case .paranormal:
+            return "Paranormal Detector"
+        case .cemetery:
+            return "AR Cemetery"
+        }
+    }
+
+    private func headerSubtitle(for theme: Theme) -> String {
+        switch theme {
+        case .normal:
+            return "Real-time 3D Spatial Mapping"
+        case .hauntedHouse:
+            return "Spooky Decorations Everywhere"
+        case .ectoplasm:
+            return "Detecting Spectral Energy"
+        case .paranormal:
+            return "Tracking Supernatural Activity"
+        case .cemetery:
+            return "Rest in Pixels"
+        }
+    }
+
+    private func planeLabel(for theme: Theme) -> String {
+        switch theme {
+        case .normal:
+            return "Detected Planes"
+        case .hauntedHouse:
+            return "Haunted Surfaces"
+        case .ectoplasm:
+            return "Ectoplasmic Planes"
+        case .paranormal:
+            return "Paranormal Hot Spots"
+        case .cemetery:
+            return "Burial Grounds"
+        }
+    }
+
+    private func meshLabel(for theme: Theme) -> String {
+        switch theme {
+        case .normal:
+            return "Mesh Anchors"
+        case .hauntedHouse:
+            return "Spooky Meshes"
+        case .ectoplasm:
+            return "Spectral Manifestations"
+        case .paranormal:
+            return "Ghost Signatures"
+        case .cemetery:
+            return "Undead Meshes"
+        }
+    }
+
+    private func positionLabel(for theme: Theme) -> String {
+        switch theme {
+        case .normal:
+            return "Device Position"
+        case .hauntedHouse:
+            return "Your Location"
+        case .ectoplasm:
+            return "Scanner Position"
+        case .paranormal:
+            return "Investigator Position"
+        case .cemetery:
+            return "Visitor Position"
+        }
+    }
+
+    private func themeBackground(for theme: Theme) -> Material {
+        switch theme {
+        case .normal:
+            return .regularMaterial
+        case .hauntedHouse:
+            return .ultraThickMaterial
+        case .ectoplasm:
+            return .thinMaterial
+        case .paranormal:
+            return .thickMaterial
+        case .cemetery:
+            return .ultraThickMaterial
+        }
+    }
+
+    private func handleThemeChange(_ newTheme: Theme) {
+        // Update managers with new theme
+        Task { @MainActor in
+            appState.planeManager?.updateTheme(newTheme)
+            appState.meshManager?.updateTheme(newTheme)
+        }
+    }
 }
 
 enum MeshStyle: String, Codable, CaseIterable {
     case wireframe
     case solid
     case transparent
+}
+
+enum Theme: String, Codable, CaseIterable {
+    case normal
+    case hauntedHouse
+    case ectoplasm
+    case paranormal
+    case cemetery
+
+    var displayName: String {
+        switch self {
+        case .normal: return "Normal"
+        case .hauntedHouse: return "Haunted House"
+        case .ectoplasm: return "Ectoplasm Scanner"
+        case .paranormal: return "Paranormal Activity"
+        case .cemetery: return "AR Cemetery"
+        }
+    }
 }
 
 #Preview {

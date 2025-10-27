@@ -36,6 +36,7 @@ class AppState {
     var showPlanes = true
     var showMesh = true
     var meshStyle: MeshStyle = .wireframe
+    var theme: Theme = .normal
 
     // MARK: - Provider lifecycle
     private func recreateProviders() {

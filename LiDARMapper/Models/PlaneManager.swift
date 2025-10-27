@@ -71,6 +71,9 @@ class PlaneManager {
         // Add collision for interaction (optional)
         entity.collision = CollisionComponent(shapes: [.generateBox(width: 1, height: 0.01, depth: 1)])
 
+        // Set initial visibility based on current setting
+        entity.isEnabled = appState?.showPlanes ?? true
+
         planeEntities[anchor.id] = entity
         rootEntity.addChild(entity)
 

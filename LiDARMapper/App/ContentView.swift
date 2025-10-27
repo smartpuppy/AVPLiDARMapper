@@ -81,6 +81,9 @@ struct ContentView: View {
             .background(.regularMaterial)
             .cornerRadius(12)
 
+            Spacer()
+                .frame(minHeight: 20, maxHeight: 40)
+
             // Action Button
             Button {
                 Task {
@@ -102,8 +105,7 @@ struct ContentView: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
         }
-        .padding(EdgeInsets(top: 50, leading: 24, bottom: 50, trailing: 24))
-        .frame(width: 600, height: 800)
+        .padding(32)
     }
 
     private func formatPosition(_ position: SIMD3<Float>?) -> String {

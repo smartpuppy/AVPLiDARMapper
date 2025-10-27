@@ -81,8 +81,6 @@ struct ContentView: View {
             .background(.regularMaterial)
             .cornerRadius(12)
 
-            Spacer()
-
             // Action Button
             Button {
                 Task {
@@ -104,7 +102,7 @@ struct ContentView: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
         }
-        .padding(40)
+        .padding(EdgeInsets(top: 50, leading: 24, bottom: 50, trailing: 24))
         .frame(width: 600, height: 800)
     }
 

@@ -13,10 +13,10 @@ import SwiftUI
 @Observable
 class AppState {
     // AR Session components
+    var worldTracking = WorldTrackingProvider()
+    var planeDetection = PlaneDetectionProvider(alignments: [.horizontal, .vertical])
+    var sceneReconstruction = SceneReconstructionProvider(modes: [.classification])
     let arkitSession = ARKitSession()
-    let worldTracking = WorldTrackingProvider()
-    let planeDetection = PlaneDetectionProvider(alignments: [.horizontal, .vertical])
-    let sceneReconstruction = SceneReconstructionProvider(modes: [.classification])
 
     // Managers
     var planeManager: PlaneManager?
@@ -36,6 +36,14 @@ class AppState {
     var showPlanes = true
     var showMesh = true
     var meshStyle: MeshStyle = .wireframe
+
+    // MARK: - Provider lifecycle
+    private func recreateProviders() {
+        // Create fresh providers. Stopped providers cannot be re-run.
+        worldTracking = WorldTrackingProvider()
+        planeDetection = PlaneDetectionProvider(alignments: [.horizontal, .vertical])
+        sceneReconstruction = SceneReconstructionProvider(modes: [.classification])
+    }
 
     init() {
         Task {
@@ -66,6 +74,14 @@ class AppState {
             return
         }
 
+        guard !isSessionRunning else {
+            print("ℹ️ Session already running; ignoring start request")
+            return
+        }
+
+        // Recreate providers since stopped providers cannot be re-run
+        recreateProviders()
+
         do {
             print("🚀 Starting ARKit session...")
             try await arkitSession.run([worldTracking, planeDetection, sceneReconstruction])
@@ -78,16 +94,27 @@ class AppState {
 
     /// Stop the AR session
     func stopSession() {
+        guard isSessionRunning else {
+            print("ℹ️ Session already stopped; ignoring stop request")
+            return
+        }
+
+        // Stop the ARKit session which stops all providers
         arkitSession.stop()
         isSessionRunning = false
+
+        // Reset state counters
         devicePosition = nil
         detectedPlaneCount = 0
         meshAnchorCount = 0
+
         print("⏹️ ARKit session stopped")
     }
 
     /// Update device position from world tracking
     func updateDevicePosition() {
+        guard isSessionRunning else { return }
+
         guard let pose = worldTracking.queryDeviceAnchor(atTimestamp: CACurrentMediaTime()) else {
             return
         }

@@ -14,6 +14,10 @@ class PlaneManager {
     private var planeEntities: [UUID: ModelEntity] = [:]
     private let rootEntity: Entity
 
+    // Monitoring tasks
+    private var planeProducerTask: Task<Void, Never>?
+    private var planeConsumerTask: Task<Void, Never>?
+
     init(appState: AppState, rootEntity: Entity) {
         self.appState = appState
         self.rootEntity = rootEntity
@@ -21,29 +25,52 @@ class PlaneManager {
 
     /// Start monitoring plane updates
     func startMonitoring() async {
-        guard let appState = appState else { return }
+        // Capture a strong local reference to AppState first (no actor hop yet)
+        guard let appState = self.appState else { return }
+        // Access MainActor-isolated provider
+        let provider = appState.planeDetection
 
         print("👀 PlaneManager: Starting to monitor plane updates...")
 
-        for await update in appState.planeDetection.anchorUpdates {
-            if Task.isCancelled { break }
-            await handlePlaneUpdate(update)
+        // Create a stream/continuation pair to bridge between background producer and MainActor consumer
+        let (stream, continuation) = AsyncStream<AnchorUpdate<PlaneAnchor>>.makeStream()
+
+        // Producer: consume provider updates off-main and yield into the stream
+        planeProducerTask = Task {
+            for await update in provider.anchorUpdates {
+                if Task.isCancelled { break }
+                continuation.yield(update)
+            }
+            continuation.finish()
+        }
+
+        // Consumer: run on MainActor and perform RealityKit/AppState mutations
+        planeConsumerTask = Task { @MainActor in
+            for await update in stream {
+                self.handlePlaneUpdate(update)
+            }
         }
     }
 
+    /// Stop monitoring plane updates
+    func stopMonitoring() {
+        planeProducerTask?.cancel(); planeProducerTask = nil
+        planeConsumerTask?.cancel(); planeConsumerTask = nil
+    }
+
     /// Handle plane anchor updates
-    private func handlePlaneUpdate(_ update: AnchorUpdate<PlaneAnchor>) async {
+    private func handlePlaneUpdate(_ update: AnchorUpdate<PlaneAnchor>) {
         guard let appState = appState else { return }
 
         let anchor = update.anchor
 
         switch update.event {
         case .added:
-            await addPlane(anchor)
+            addPlane(anchor)
             appState.detectedPlaneCount = planeEntities.count
 
         case .updated:
-            await updatePlane(anchor)
+            updatePlane(anchor)
 
         case .removed:
             removePlane(anchor)
@@ -52,7 +79,7 @@ class PlaneManager {
     }
 
     /// Add a new plane entity
-    private func addPlane(_ anchor: PlaneAnchor) async {
+    private func addPlane(_ anchor: PlaneAnchor) {
         guard let meshResource = MeshConverter.planeMeshResource(from: anchor.geometry) else {
             print("⚠️ Failed to create mesh resource for plane \(anchor.id)")
             return
@@ -82,7 +109,7 @@ class PlaneManager {
     }
 
     /// Update an existing plane entity
-    private func updatePlane(_ anchor: PlaneAnchor) async {
+    private func updatePlane(_ anchor: PlaneAnchor) {
         guard let entity = planeEntities[anchor.id] else { return }
 
         // Update mesh
@@ -115,6 +142,7 @@ class PlaneManager {
 
     /// Clear all planes
     func clear() {
+        stopMonitoring()
         for entity in planeEntities.values {
             entity.removeFromParent()
         }

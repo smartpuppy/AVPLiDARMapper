@@ -14,6 +14,10 @@ class MeshManager {
     private var meshEntities: [UUID: ModelEntity] = [:]
     private let rootEntity: Entity
 
+    // Monitoring tasks
+    private var meshProducerTask: Task<Void, Never>?
+    private var meshConsumerTask: Task<Void, Never>?
+
     init(appState: AppState, rootEntity: Entity) {
         self.appState = appState
         self.rootEntity = rootEntity
@@ -21,17 +25,41 @@ class MeshManager {
 
     /// Start monitoring mesh updates
     func startMonitoring() async {
-        guard let appState = appState else { return }
+        // Capture a strong local reference to AppState first (no actor hop yet)
+        guard let appState = self.appState else { return }
+        // Access MainActor-isolated provider synchronously (class is MainActor)
+        let provider = appState.sceneReconstruction
 
         print("👀 MeshManager: Starting to monitor mesh updates...")
 
-        for await update in appState.sceneReconstruction.anchorUpdates {
-            if Task.isCancelled { break }
-            await handleMeshUpdate(update)
+        // Create a stream/continuation pair to bridge between background producer and MainActor consumer
+        let (stream, continuation) = AsyncStream<AnchorUpdate<MeshAnchor>>.makeStream()
+
+        // Producer: consume provider updates off-main and yield into the stream
+        meshProducerTask = Task {
+            for await update in provider.anchorUpdates {
+                if Task.isCancelled { break }
+                continuation.yield(update)
+            }
+            continuation.finish()
+        }
+
+        // Consumer: run on MainActor and perform RealityKit/AppState mutations
+        meshConsumerTask = Task { @MainActor in
+            for await update in stream {
+                await self.handleMeshUpdate(update)
+            }
         }
     }
 
+    /// Stop monitoring mesh updates
+    func stopMonitoring() {
+        meshProducerTask?.cancel(); meshProducerTask = nil
+        meshConsumerTask?.cancel(); meshConsumerTask = nil
+    }
+
     /// Handle mesh anchor updates
+    @MainActor
     private func handleMeshUpdate(_ update: AnchorUpdate<MeshAnchor>) async {
         guard let appState = appState else { return }
 
@@ -52,6 +80,7 @@ class MeshManager {
     }
 
     /// Add a new mesh entity
+    @MainActor
     private func addMesh(_ anchor: MeshAnchor) async {
         guard let meshResource = MeshConverter.meshResource(from: anchor.geometry) else {
             print("⚠️ Failed to create mesh resource for mesh \(anchor.id)")
@@ -92,6 +121,7 @@ class MeshManager {
     }
 
     /// Update an existing mesh entity
+    @MainActor
     private func updateMesh(_ anchor: MeshAnchor) async {
         guard let entity = meshEntities[anchor.id] else { return }
         guard let appState = appState else { return }
@@ -117,6 +147,7 @@ class MeshManager {
     }
 
     /// Remove a mesh entity
+    @MainActor
     private func removeMesh(_ anchor: MeshAnchor) {
         guard let entity = meshEntities.removeValue(forKey: anchor.id) else { return }
         entity.removeFromParent()
@@ -124,6 +155,7 @@ class MeshManager {
     }
 
     /// Toggle mesh visibility
+    @MainActor
     func setVisibility(_ visible: Bool) {
         for entity in meshEntities.values {
             entity.isEnabled = visible
@@ -131,10 +163,9 @@ class MeshManager {
     }
 
     /// Update mesh visualization style
+    @MainActor
     func updateStyle(_ style: MeshStyle) {
-        guard let appState = appState else { return }
-
-        for (id, entity) in meshEntities {
+        for (_, entity) in meshEntities {
             // Get the classification from the anchor
             // Since we don't have direct access to anchor here, use a default material
             let material: any RealityKit.Material = switch style {
@@ -151,7 +182,9 @@ class MeshManager {
     }
 
     /// Clear all meshes
+    @MainActor
     func clear() {
+        stopMonitoring()
         for entity in meshEntities.values {
             entity.removeFromParent()
         }

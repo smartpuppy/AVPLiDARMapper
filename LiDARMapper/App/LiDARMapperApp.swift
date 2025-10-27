@@ -17,8 +17,7 @@ struct LiDARMapperApp: App {
             ContentView()
                 .environment(appState)
         }
-        .windowResizability(.contentSize)
-        .defaultSize(width: 600, height: 700)
+        .defaultSize(width: 600, height: 800)
 
         ImmersiveSpace(id: "ImmersiveSpace") {
             ImmersiveView()

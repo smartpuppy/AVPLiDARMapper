@@ -82,7 +82,6 @@ struct ContentView: View {
             .cornerRadius(12)
 
             Spacer()
-                .frame(minHeight: 20, maxHeight: 40)
 
             // Action Button
             Button {

@@ -26,6 +26,7 @@ class MeshManager {
         print("👀 MeshManager: Starting to monitor mesh updates...")
 
         for await update in appState.sceneReconstruction.anchorUpdates {
+            if Task.isCancelled { break }
             await handleMeshUpdate(update)
         }
     }

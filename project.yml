@@ -34,11 +34,6 @@ targets:
         UILaunchScreen: {}
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: true
-          UIApplicationPreferredDefaultSceneSessionRole: UIWindowSceneSessionRoleImmersiveSpaceApplication
-          UISceneConfigurations:
-            UIWindowSceneSessionRoleApplication:
-              - UISceneConfigurationName: Default Configuration
-                UISceneDelegateClassName: $(PRODUCT_MODULE_NAME).SceneDelegate
         NSWorldSensingUsageDescription: This app needs access to world sensing to create 3D maps of your environment
         UIRequiredDeviceCapabilities:
           - arkit

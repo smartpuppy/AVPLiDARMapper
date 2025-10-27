@@ -26,6 +26,7 @@ class PlaneManager {
         print("👀 PlaneManager: Starting to monitor plane updates...")
 
         for await update in appState.planeDetection.anchorUpdates {
+            if Task.isCancelled { break }
             await handlePlaneUpdate(update)
         }
     }
@@ -120,3 +121,4 @@ class PlaneManager {
         planeEntities.removeAll()
     }
 }
+
